@@ -15,7 +15,8 @@ export const loggedWorkoutSchema = z.object({id: idSchema, title: z.string().nul
   weight_unit: z.enum(["kg", "lb"]).nullish(), workout_duration: scalar,
   workout_perform_date: z.string().nullish(), total_volume: scalar, exercises: z.array(loggedExerciseSchema).nullish()});
 export const pageFields = {count: z.number().int().nonnegative().optional(), total_records: z.number().int().nonnegative().optional(),
-  total_pages: z.number().int().nonnegative().optional(), current_page: z.coerce.number().int().positive().optional(), limit: z.number().int().positive().optional()};
+  total_pages: z.number().int().nonnegative().optional(), current_page: z.preprocess(value => value === null || value === 0 || value === "0" || value === "" ? undefined : value,
+    z.coerce.number().int().positive().optional()), limit: z.number().int().positive().optional()};
 export const workoutPageSchema = z.object({...pageFields, workouts: z.array(loggedWorkoutSchema)});
 /** Lyfta's performed catalog may contain rows without numeric identities.
  * Reject those rows rather than inventing IDs, and expose the loss to callers. */
