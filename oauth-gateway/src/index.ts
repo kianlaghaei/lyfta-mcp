@@ -15,6 +15,7 @@ interface Env {
   LYFTA_WORKER: Fetcher;
   OAUTH_OWNER_PASSWORD: string;
   MCP_ACCESS_TOKEN: string;
+  MCP_LINK_SLUG?: string;
   OAUTH_PROVIDER: OAuthHelpers;
 }
 
@@ -161,6 +162,36 @@ const oauthProvider = new OAuthProvider<Env>({
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const pathname = new URL(request.url).pathname;
+    // No-auth ChatGPT connector: a private, high-entropy URL is the sole capability.
+    // Do not advertise this endpoint, or place its slug in source or public logs.
+    const anonymousPath = /^\/connect\/([A-Za-z0-9_-]{32,128})\/mcp$/.exec(pathname);
+    if (anonymousPath) {
+      if (!env.MCP_LINK_SLUG || env.MCP_LINK_SLUG.length < 32 ||
+          !env.MCP_ACCESS_TOKEN || env.MCP_ACCESS_TOKEN.length < 32)
+        return new Response("Connector not configured", {status: 503});
+      if (!(await isOwner(anonymousPath[1]!, env.MCP_LINK_SLUG)))
+        return new Response("Not found", {status: 404});
+      if (!["POST", "GET", "DELETE"].includes(request.method))
+        return new Response("Method not allowed", {status: 405});
+      if (Number(request.headers.get("Content-Length") ?? 0) > 512_000)
+        return new Response("Request too large", {status: 413});
+      const browserOrigin = request.headers.get("Origin");
+      if (browserOrigin && browserOrigin !== new URL(request.url).origin)
+        return new Response("Cross-origin requests are not allowed", {status: 403});
+      // The original MCP Worker still requires its independent internal bearer.
+      // Never forward browser/client credentials to that Worker.
+      const headers = new Headers(request.headers);
+      headers.delete("Origin");
+      headers.delete("Cookie");
+      headers.set("Authorization", "Bearer " + env.MCP_ACCESS_TOKEN);
+      const upstream = new Request("https://lyfta-personal-mcp.internal/mcp", {
+        method: request.method,
+        headers,
+        body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
+        redirect: "manual"
+      });
+      return env.LYFTA_WORKER.fetch(upstream);
+    }
     const isMetadata = pathname.startsWith("/.well-known/") || pathname === "/healthz";
     if (!isMetadata && (!env.OAUTH_OWNER_PASSWORD || env.OAUTH_OWNER_PASSWORD.length < 16
        || !env.MCP_ACCESS_TOKEN || env.MCP_ACCESS_TOKEN.length < 32

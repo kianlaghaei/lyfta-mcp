@@ -1,4 +1,6 @@
-# Personal Lyfta MCP — ChatGPT OAuth Gateway
+# Personal Lyfta MCP — ChatGPT OAuth Gateway and passwordless connector
+
+For the **No authentication** ChatGPT connection (without password prompts), use the private-link setup in [docs/NOAUTH_CONNECTOR.md](docs/NOAUTH_CONNECTOR.md). Never publish the complete private link. Anyone who learns it can read your fitness data and attempt writes.
 
 This is a **second** Cloudflare Worker for ChatGPT OAuth authentication. It does not replace the original `worker/` Lyfta MCP server, its 12 tools, or the Lyfta API.
 
