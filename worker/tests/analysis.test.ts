@@ -17,7 +17,7 @@ describe("muscle analysis", () => {
     expect(report.diagnostics.counted_sets).toBe(2);
     expect(report.muscle_load.find(m => m.muscle_id === "24")?.direct_sets).toBe(2);
     expect(report.muscle_load.find(m => m.muscle_id === "44")?.secondary_set_equivalents).toBe(1);
-    expect(report.muscle_load[0]?.timing_category).toBe("24_to_48h");
+    expect(report.muscle_load[0]?.hours_since_last_workout).toBe(24);
   });
   it("does not treat unknown exercise metadata as confirmed muscle training", () => {
     const report = analyzeMuscles([{workout_perform_date:"2026-11-14T12:00:00Z", exercises:[{exercise_id:99, sets:[{}]}]}],
