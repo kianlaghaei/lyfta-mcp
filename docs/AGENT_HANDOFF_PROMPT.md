@@ -27,6 +27,9 @@ From `worker/`: `npm ci`, `npm run check`, `npm test`, `npm run build`, `npm run
 Unit/HTTP tests use realistic synthetic fixtures only. CI performs these steps; inspect the
 workflow result on the final source SHA. Do not report a prior-SHA run as evidence for new changes.
 The Vitest upgrade removes the baseline development-tool audit advisories.
+Root `vitest.config.ts` includes only `test/**/*.test.ts`: its Node CI installs only
+root dependencies and must not discover `worker/tests`. Keep both suites independent;
+run root `npm ci`, `npm run typecheck`, `npm test`, `npm run build` when changing that boundary.
 
 ## Important invariants and live gates
 
