@@ -23,7 +23,7 @@ function escapeHtml(value: string): string {
 }
 
 async function isOwner(provided: string, expected: string): Promise<boolean> {
-  if (!expected || expected.length < 32 || !provided || provided.length > 512) return false;
+  if (!expected || expected.length < 16 || !provided || provided.length > 512) return false;
   const enc = new TextEncoder();
   const [a, b] = await Promise.all([
     crypto.subtle.digest("SHA-256", enc.encode(provided)),
@@ -49,7 +49,7 @@ ${details.redirectIsLoopback ? "<p><strong>Warning: this redirects to an app on 
 <p>Scopes requested:</p><ul>${scopes}</ul>
 <form method="post" autocomplete="off">
 <input type="hidden" name="handle" value="${escapeHtml(handle)}">
-<label for="pass">Owner access phrase</label><input id="pass" type="password" name="owner_password" required minlength="32" autocomplete="off">
+<label for="pass">Password (رمز ورود)</label><input id="pass" type="password" name="owner_password" required minlength="16" autocomplete="current-password" placeholder="Enter your personal password"><p><small>Paste the password saved on your computer; no long access phrase is needed.</small></p>
 <button type="submit" name="decision" value="approve">Authorize</button>
 <button type="submit" name="decision" value="deny" formnovalidate>Deny</button>
 </form><p><small>Only approve a connection that you initiated yourself.</small></p></html>`;
@@ -63,7 +63,7 @@ const defaultHandler = {
       return Response.json({resource: RESOURCE, authorization_servers: [HOST], scopes_supported: ["mcp:read", "mcp:write"]},
         {headers: {"Cache-Control": "public, max-age=300"}});
     if (url.pathname !== "/authorize") return new Response("Not found", {status:404});
-    if (!env.OAUTH_OWNER_PASSWORD || env.OAUTH_OWNER_PASSWORD.length < 32 || !env.MCP_ACCESS_TOKEN)
+    if (!env.OAUTH_OWNER_PASSWORD || env.OAUTH_OWNER_PASSWORD.length < 16 || !env.MCP_ACCESS_TOKEN)
       return new Response("Owner authorization is not configured", {status:503});
     const oauth = env.OAUTH_PROVIDER;
     try {
@@ -162,7 +162,7 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const pathname = new URL(request.url).pathname;
     const isMetadata = pathname.startsWith("/.well-known/") || pathname === "/healthz";
-    if (!isMetadata && (!env.OAUTH_OWNER_PASSWORD || env.OAUTH_OWNER_PASSWORD.length < 32
+    if (!isMetadata && (!env.OAUTH_OWNER_PASSWORD || env.OAUTH_OWNER_PASSWORD.length < 16
        || !env.MCP_ACCESS_TOKEN || env.MCP_ACCESS_TOKEN.length < 32
        || env.OAUTH_OWNER_PASSWORD === env.MCP_ACCESS_TOKEN))
       return new Response("OAuth Gateway is not provisioned", {status:503});

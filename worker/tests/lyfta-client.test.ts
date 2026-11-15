@@ -10,6 +10,17 @@ describe("LyftaClient", () => {
     expect(url).toContain("/api/v1/workouts?page=2&limit=10");
     expect(url).not.toContain("mock-key");
     expect(new Headers(config?.headers).get("Authorization")).toBe("Bearer mock-key");
+    expect(config?.redirect).toBe("manual"); // Cloudflare runtime rejects redirect:"error".
+    expect(fetcher.mock.contexts[0]).toBe(globalThis); // Cloudflare global fetch rejects an unrelated this.
+  });
+  it("never follows redirects that might leak the API bearer token", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => new Response(null, {
+      status:302, headers:{Location:"https://redirect.invalid"}
+    }));
+    const client = new LyftaClient("secret-key", fetcher);
+    await expect(client.performedExercises()).rejects.toMatchObject({statusCode:302});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls[0]?.[1]?.redirect).toBe("manual");
   });
   it("sends the documented collectionId as an integer", async () => {
     const fetcher = vi.fn<typeof fetch>(async () => Response.json({status:true, data:{id:7}}));
