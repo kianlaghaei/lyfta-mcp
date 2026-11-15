@@ -19,8 +19,16 @@ export async function collectPages<T extends {id: string | number}>(fetchPage: (
   return {records: [...records.values()], diagnostics: {complete, reason, pages_fetched: pages,
     duplicates_removed: duplicates, next_page: complete ? null : nextPage, start_page: start}};
 }
-export function collectExercises(client: LyftaClient, maxPages = 5) {
-  return collectPages(async page => {const result = await client.performedExercises(page); return {...result, items: result.exercises};}, 1, maxPages);
+export async function collectExercises(client: LyftaClient, maxPages = 5) {
+  let skipped = 0;
+  const data = await collectPages(async page => {
+    const result = await client.performedExercises(page);
+    skipped += result.skipped_invalid_records ?? 0;
+    return {...result, items: result.exercises};
+  }, 1, maxPages);
+  return {...data, diagnostics: {...data.diagnostics, skipped_invalid_exercise_records: skipped,
+    complete: data.diagnostics.complete && skipped === 0,
+    reason: skipped > 0 ? "invalid_catalog_records_skipped" : data.diagnostics.reason}};
 }
 export function collectWorkouts(client: LyftaClient, from: string, to: string, maxPages = 5) {
   return collectPages(async page => {const result = await client.workouts(page, 100, from, to); return {...result, items: result.workouts};}, 1, maxPages);
