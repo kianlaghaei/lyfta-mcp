@@ -4,12 +4,18 @@ import {collectExercises} from "./history.js";
 import type {CatalogExercise} from "./contracts.js";
 import {ValidationError} from "./errors.js";
 
-/** All identities must be verified before the first POST. Unknown type fails closed. */
+/** Verify official catalog ID, exact name and image. Lyfta occasionally omits
+ * exercise_type; only explicitly supported types can then be user-supplied,
+ * and every such fallback is reported as unverified. */
+const supportedTypes = new Set(["weight_reps", "duration", "distance_duration", "full_bodyweight",
+  "bodyweight_assisted", "db_2_simultaneous", "db_1_both_sides", "db_1_alt_sides", "db_1_alt_legs",
+  "db_2_alt_sides", "db_2_alt_legs"]);
 export async function validateIdentities(client: LyftaClient, workouts: WorkoutTemplate[]) {
   const performed = await collectExercises(client, 3);
   const catalog = new Map(performed.records.map(ex => [String(ex.id), ex]));
   const exercises = new Map(workouts.flatMap(w => w.exercises).map(ex => [ex.exercise_id, ex]));
   if (exercises.size > 30) throw new ValidationError("Use at most 30 distinct exercises per preview");
+  const unknownTypes = new Set<number>();
   for (const ex of exercises.values()) {
     let match: CatalogExercise | undefined = catalog.get(String(ex.exercise_id));
     if (!match || match.exercise_type == null) {
@@ -17,24 +23,32 @@ export async function validateIdentities(client: LyftaClient, workouts: WorkoutT
       for (let page = 0; page < 2; page++) {
         const found = (await client.searchExercises(ex.excercise_name, 50, offset)).data;
         const candidate = found.results.find(item => String(item.id) === String(ex.exercise_id));
-        if (candidate && candidate.exercise_type != null) {match = candidate; break;}
-        if (!found.pagination.hasMore || !found.results.length) break;
+        if (candidate && (candidate.exercise_type != null || !match)) match = candidate;
+        if (match?.exercise_type != null || !found.pagination.hasMore || !found.results.length) break;
         offset += found.results.length;
       }
     }
-    if (!match || match.exercise_type == null) throw new ValidationError("Exercise " + ex.exercise_id + " identity/type could not be verified within catalog coverage");
+    if (!match) throw new ValidationError("Exercise " + ex.exercise_id + " identity not found in Lyfta catalog coverage");
+    if (match.exercise_type == null) {
+      if (!supportedTypes.has(ex.exercise_type)) throw new ValidationError("Exercise " + ex.exercise_id + " has no catalog type; unsupported fallback type");
+      unknownTypes.add(ex.exercise_id);
+    }
     catalog.set(String(ex.exercise_id), match);
   }
   // Check every occurrence, including duplicate IDs with inconsistent fields.
   for (const ex of workouts.flatMap(w => w.exercises)) {
     const match = catalog.get(String(ex.exercise_id));
-    if (!match || match.name !== ex.excercise_name || match.image_name !== ex.exercise_image || match.exercise_type !== ex.exercise_type)
+    if (!match || match.name !== ex.excercise_name ||
+      (match.image_name ?? "") !== ex.exercise_image ||
+      (match.exercise_type == null ? !supportedTypes.has(ex.exercise_type) : match.exercise_type !== ex.exercise_type))
       throw new ValidationError("Exercise " + ex.exercise_id + " name, type or image differs from Lyfta catalog");
   }
-  return {verified_exercises: exercises.size, performed_catalog: performed.diagnostics,
+  return {verified_exercises: exercises.size, unverified_exercise_type_ids: [...unknownTypes],
+    performed_catalog: performed.diagnostics,
     workouts: workouts.map(w => ({title: w.title, exercises: w.exercises.length, sets: w.exercises.reduce((n, e) => n + e.sets.length, 0),
       supersets: [...new Set(w.exercises.map(e => e.exercise_superset_id).filter(id => id && id > 0))]})),
-    warnings: ["Weights use the owner's Lyfta preferences; the template API has no documented weight-unit override.",
+    warnings: [...(unknownTypes.size ? ["Some exercise types are missing from Lyfta's catalog; their IDs, names and images were verified, but selected types remain unverified. Review them in the app after creation."] : []),
+      "Weights use the owner's Lyfta preferences; the template API has no documented weight-unit override.",
       "Review exercise order, equipment, volume, rep ranges, RIR and rest against the user's requirements before confirming."]};
 }
 const enc = new TextEncoder();
