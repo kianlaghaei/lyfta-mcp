@@ -153,7 +153,8 @@ const oauthProvider = new OAuthProvider<Env>({
   clientRegistrationEndpoint:"/oauth/register",
   clientIdMetadataDocumentEnabled:true,
   scopesSupported:["mcp:read","mcp:write","offline_access"],
-  requiredScopes:["mcp:read"],
+  // Both scopes are required initially: ChatGPT must be offered program creation, not read-only access.
+  requiredScopes:["mcp:read","mcp:write"],
   resourceMetadata:{resource:RESOURCE,authorization_servers:[HOST]}
 });
 

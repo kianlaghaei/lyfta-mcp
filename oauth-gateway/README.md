@@ -83,7 +83,7 @@ The metadata should appear at `/.well-known/oauth-authorization-server`. A 401 w
 - The owner's password is compared to the secret using SHA-256 digests; it is not an email or identity-provider login. Use a random high-entropy secret and do not share it.
 - OAuth Provider v1 manages OAuth 2.1 PKCE, consent CSRF cookie, client registration, token grants and expirations in KV.
 - The page displays client name, verified/claimed identity, redirect host and requested scopes before the owner approves.
-- Read tools require `mcp:read`; create tools require `mcp:write`. Main MCP also requires explicit confirmed preview receipts for writes.
+- ChatGPT initially requests **both** `mcp:read` and `mcp:write` through the protected-resource metadata. Read tools require `mcp:read`; create tools require `mcp:write`. Main MCP also requires explicit confirmed preview receipts for writes. Existing read-only authorizations must be disconnected/re-authorized after a scope update.
 - Static bearer clients can still connect directly to the original Worker, if enabled and securely configured.
 - A random owner password has no 2FA. If broader exposure or shared users are desired later, replace this with an established identity provider and add abuse rate-limiting.
 - No live ChatGPT linking, Lyfta read, or Lyfta write has yet been validated.

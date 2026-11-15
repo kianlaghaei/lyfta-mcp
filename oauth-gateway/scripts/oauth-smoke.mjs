@@ -7,6 +7,10 @@ const ownerPassword = process.env.OAUTH_OWNER_PASSWORD;
 if (!ownerPassword) throw new Error("Set OAUTH_OWNER_PASSWORD in the test process environment");
 const post = async (url, body, headers = {}) => fetch(url,{method:"POST",redirect:"manual",headers,body});
 
+const metadataResponse = await fetch(origin+"/.well-known/oauth-protected-resource/mcp");
+assert.equal(metadataResponse.status,200,"Missing OAuth protected-resource metadata");
+const resourceMetadata = await metadataResponse.json();
+assert.deepEqual(resourceMetadata.scopes_supported,["mcp:read","mcp:write"],"Both scopes must be advertised to ChatGPT");
 const registration = await post(origin+"/oauth/register",JSON.stringify({
   client_name:"Lyfta local OAuth integration smoke test",
   redirect_uris:["http://127.0.0.1:34567/oauth/callback"],
