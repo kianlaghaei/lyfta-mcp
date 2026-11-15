@@ -11,6 +11,9 @@ const metadataResponse = await fetch(origin+"/.well-known/oauth-protected-resour
 assert.equal(metadataResponse.status,200,"Missing OAuth protected-resource metadata");
 const resourceMetadata = await metadataResponse.json();
 assert.deepEqual(resourceMetadata.scopes_supported,["mcp:read","mcp:write"],"Both scopes must be advertised to ChatGPT");
+const initialChallenge = await fetch(origin+"/mcp");
+assert.equal(initialChallenge.status,401);
+assert.match(initialChallenge.headers.get("WWW-Authenticate")??"",/scope="mcp:read mcp:write"/,"OAuth challenge must request both scopes");
 const registration = await post(origin+"/oauth/register",JSON.stringify({
   client_name:"Lyfta local OAuth integration smoke test",
   redirect_uris:["http://127.0.0.1:34567/oauth/callback"],

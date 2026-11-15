@@ -171,7 +171,7 @@ export default {
       const headers = new Headers(response.headers);
       headers.set("WWW-Authenticate",
         'Bearer realm="OAuth", resource_metadata="' +
-        HOST + '/.well-known/oauth-protected-resource/mcp", scope="mcp:read"');
+        HOST + '/.well-known/oauth-protected-resource/mcp", scope="mcp:read mcp:write"');
       return new Response(response.body, {status: 401, headers});
     }
     return response;
