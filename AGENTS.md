@@ -24,6 +24,21 @@ Recovery percent inside the Lyfta app is not in the public API; do not manufactu
 
 ## Definition of done
 
-A deployed MCP must return tools/list, pass tool unit tests, remain protected without secrets,
-read real Lyfta exercises and history without exposing credentials, and create a test collection
-and template only after user approval. Report API gaps without inventing functionality.
+Engineering readiness requires strict check, synthetic tests, dry-run build and local workerd
+smoke on the final SHA, pushed branch and verified GitHub CI, current docs and an explicit list
+of live gates. Production acceptance additionally requires authorized real Lyfta reads,
+separately approved creation/readback and an authenticated client session. Never conflate them.
+
+## Worker development rules
+
+- Use Node 24 and `worker/package-lock.json`; root package is the independent upstream project.
+- Run `npm ci`, `npm run check`, `npm test`, `npm run build`, `npm run smoke:local` in `worker/`.
+- Keep response contracts and strict tool/write schemas synchronized. Unknown is not zero;
+  only `is_completed:true` sets enter completed-set metrics. Preserve kg/lb separation.
+- All automatic retries are GET-only. Never promise idempotency: signed previews bind content,
+  but do not prevent replay. Return known created IDs and uncertain/partial outcomes.
+- Do not add undocumented coach fields, private endpoints, persistent storage or OAuth services
+  to work around contract gaps. The documented OAuth gateway is a separate integration gate.
+- Read `docs/WORKER_TOOLS.md`, `docs/WORKER_AUTH.md`, and `docs/WORKER_ANALYTICS.md` for the
+  authoritative tool, client and interpretation conventions; avoid duplicating their contracts.
+- Preserve real user data/secrets outside fixtures, outputs, commits and GitHub descriptions.

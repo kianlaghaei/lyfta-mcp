@@ -3,13 +3,17 @@ name: Cloudflare personal worker CI
 on:
   push:
     branches: [feat/cloudflare-personal-mcp]
-    paths: ['worker/**', '.github/workflows/worker-ci.yml']
+    paths: ['worker/**', 'docs/**', 'AGENTS.md', 'README.md', '.github/workflows/worker-ci.yml']
   pull_request:
-    paths: ['worker/**', '.github/workflows/worker-ci.yml']
+    paths: ['worker/**', 'docs/**', 'AGENTS.md', 'README.md', '.github/workflows/worker-ci.yml']
+
+permissions:
+  contents: read
 
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: worker
@@ -24,3 +28,4 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run build
+      - run: npm run smoke:local

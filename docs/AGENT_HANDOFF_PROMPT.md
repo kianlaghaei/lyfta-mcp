@@ -1,49 +1,47 @@
-# Development Agent Handoff — Lyfta Personal MCP
+# Worker engineering handoff
 
-You are taking over development of the `kianlaghaei/lyfta-mcp` fork on branch
-`feat/cloudflare-personal-mcp`, working directory `worker/`.
-The goal is a **single-user** Cloudflare Worker serving Streamable HTTP MCP and
-the documented Lyfta Community REST API. This is not a coaching SaaS.
+Work on `feat/cloudflare-personal-mcp` in `worker/`. Read root `AGENTS.md`,
+[Worker README](../worker/README.md), [coverage](API_COVERAGE.md), and current official docs
+before changes. Preserve root upstream Node implementation and LICENSE. Never inspect
+secret files merely to establish setup status. Do not deploy or perform real Lyfta writes
+without explicit owner authorization. A green synthetic suite does not prove live integration.
 
-Existing baseline:
-- Upstream source is preserved in root and its MIT license must be retained.
-- `worker/src/index.ts`: a bearer-protected MCP endpoint `/mcp` and `/healthz`.
-- `worker/src/lyfta-client.ts`: official API adapter.
-- `worker/src/server.ts`: MCP tools for search/read/write and analytics.
-- `worker/src/analysis.ts`: muscle workload and time-since-last-training heuristic.
-- `worker/src/schema.ts`: validated creation payloads.
-- Tests + CI + Wrangler config. No secrets configured and no production deployment.
+## Module ownership
 
-Priorities (in order):
-P0. Run `npm ci`, `npm run check`, `npm test`, `npm run build`.
-Fix all real errors without weakening types. Preserve Workers runtime compatibility.
-P1. Add a proper API catalog identity check for templates. Where `exercise_type` is null in library results,
-resolve from performed exercises or require explicit input; never invent identity values.
-P2. Implement bounded pagination for analysis and data-quality diagnostic indicators.
-P3. Add isolated mock tests for MCP tool input schemas, explicit write confirmation,
-auth fail-closed behavior, HTTP transport initialization, GET/POST request handling and 429.
-P4. Improve analysis: classify exercise body parts, primary/secondary distribution,
-weekly comparisons, per-exercise trends, volume and time since training. Label heuristics.
-P5. Decide on ChatGPT connector compatibility: if OAuth is required, add a minimal authorized
-OAuth flow/gateway with least privilege. Do not assume static Bearer alone works.
-P6. Prepare integration smoke tests gated on real secrets, with writes NEVER enabled by default.
-P7. After user approval, use Wrangler secrets and deploy to user's Cloudflare account; validate
-the real MCP endpoint and Lyfta operations, with no secrets in logs.
+| Module | Responsibility |
+|---|---|
+| `index.ts` | Fail-closed Bearer auth, Origin guard, per-request SDK HTTP handler and body cap |
+| `lyfta-client.ts` | Bounded streamed reads, timeouts/budgets, sanitized errors, GET-only retries, endpoint adapters |
+| `contracts.ts` | Runtime response contracts, null/unknown fields and numeric/string ID compatibility |
+| `schema.ts` | Strict local creation safeguards and documented write fields |
+| `history.ts` | Bounded pagination, stable-ID deduplication, explicit completeness |
+| `catalog.ts` | ID decoding, verified equipment/body-part tables, local filters and cursor continuation |
+| `program.ts` | Exact catalog validation, expiring payload-bound receipts, sanitized failure classification |
+| `analysis.ts` | Verified muscle table, UTC normalization, completion evidence, period/unit-separated analytics |
+| `server.ts` | 12 tools, read/write hints, structured bounded output, partial-create orchestration |
 
-Acceptance:
-- No unapproved or undocumented Lyfta endpoints or coach functionality.
-- No invented 'Lyfta recovery' number; actual in-app percentage is not public API.
-- No raw tokens in source, CI, logs, or GitHub.
-- A tool that creates records requires user intent and confirm:true.
-- Accurate typing and reliable error handling with tests, clear rate limits, backoff on safe reads.
-- Graceful behavior for missing muscle metadata and incomplete pagination.
-- Production endpoint protected with authentication compatible with chosen MCP clients.
-- Document usage and troubleshooting succinctly in README.
+## Validation
 
-Useful references:
-https://my.lyfta.app/community/api
-https://developers.cloudflare.com/agents/model-context-protocol/apis/handler-api/
-https://github.com/jkronlachner/lyfta-mcp
+From `worker/`: `npm ci`, `npm run check`, `npm test`, `npm run build`, `npm run smoke:local`.
+`npm run smoke:local` launches actual local workerd with synthetic secrets; it never calls Lyfta.
+Unit/HTTP tests use realistic synthetic fixtures only. CI performs these steps; inspect the
+workflow result on the final source SHA. Do not report a prior-SHA run as evidence for new changes.
+The Vitest upgrade removes the baseline development-tool audit advisories.
 
-When complete, provide a changed-file summary, test outcomes, API limitations and
-deployment checklist. Do not claim production readiness until a real integration test passes.
+## Important invariants and live gates
+
+- Only explicit `is_completed:true` sets count. Unknown completion/units/dates stay unknown.
+- No first-page completeness assumption, no summed kg/lb, no invented recovery/readiness score.
+- Every creation requires live catalog checks, an unchanged signed preview, and `confirm:true`
+  after human intent. The receipt is replayable during ten minutes; no exactly-once claim.
+- Never retry POST. Partial/unknown creates require saved-library readback; public delete/rollback
+  and idempotency keys are unavailable. Preserve every known created ID.
+- ChatGPT cannot provide this private static token directly. OAuth gateway is documented, not
+  implemented; do not remove auth or claim tested ChatGPT compatibility. See [auth](WORKER_AUTH.md).
+- Live account read acceptance, approved write/readback, deployment, and authenticated real-client
+  sessions remain owner-gated. Complete independent development tasks before requesting access.
+- Reverify official docs: collection/template reads, profile/me and schedule now exist; social
+  feeds and all coach operations remain deliberately out of scope.
+
+Developer testing/troubleshooting: [Worker README](../worker/README.md).
+Analytics assumptions: [interpretation](WORKER_ANALYTICS.md). Tool contract: [reference](WORKER_TOOLS.md).

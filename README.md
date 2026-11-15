@@ -1,5 +1,19 @@
 # lyfta-mcp
 
+## Personal Cloudflare Worker (this fork)
+
+The single-user Worker lives in [`worker/`](worker/README.md) on
+`feat/cloudflare-personal-mcp`. It keeps the Lyfta key server-side and exposes
+12 authenticated MCP tools for catalog discovery, preview/confirmed program creation,
+saved-library reads, paginated history, progress, muscle load and recovery-related observations.
+Start with the [Worker setup/deployment guide](worker/README.md),
+[tool reference](docs/WORKER_TOOLS.md), and [API coverage](docs/API_COVERAGE.md).
+The Worker supports clients that can send a Bearer token. Direct ChatGPT linking requires
+an OAuth gateway; see [authentication](docs/WORKER_AUTH.md). Live Lyfta verification and
+deployment require owner action. The original Node implementation and MIT license are preserved below.
+
+---
+
 [![CI](https://github.com/jkronlachner/lyfta-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jkronlachner/lyfta-mcp/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/lyfta-mcp.svg)](https://www.npmjs.com/package/lyfta-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
