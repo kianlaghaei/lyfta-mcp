@@ -1,0 +1,24 @@
+name: Lyfta OAuth Gateway CI
+
+on:
+  push:
+    paths: ["oauth-gateway/**", ".github/workflows/oauth-gateway-ci.yml"]
+  pull_request:
+    paths: ["oauth-gateway/**", ".github/workflows/oauth-gateway-ci.yml"]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: oauth-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: oauth-gateway/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build

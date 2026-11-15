@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lyfta-personal-oauth",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-15",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "workers_dev": true,
+  "vars": {"OAUTH_ORIGIN": "https://lyfta-personal-oauth.gjj7ogw34hqeaa0wlh0zfn.workers.dev"},
+  "observability": {"enabled": true, "traces": {"enabled": true}},
+  "kv_namespaces": [{"binding": "OAUTH_KV", "id": "4ff7e93c4afd44d59a372e411bd96317"}],
+  "services": [{"binding": "LYFTA_WORKER", "service": "lyfta-personal-mcp"}]
+}
