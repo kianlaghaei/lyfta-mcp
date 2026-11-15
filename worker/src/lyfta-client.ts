@@ -8,7 +8,11 @@ export class LyftaApiError extends Error {
 }
 export function parseResponse<T>(schema: z.ZodType<T>, value: unknown): T {
   const parsed = schema.safeParse(value);
-  if (!parsed.success) throw new LyftaApiError(502, "Lyfta response contract is incomplete or malformed");
+  if (!parsed.success) {
+    console.warn("Lyfta response shape mismatch", parsed.error.issues.slice(0, 5)
+      .map(issue => ({path: issue.path.map(String).join("."), code: issue.code})));
+    throw new LyftaApiError(502, "Lyfta response contract is incomplete or malformed");
+  }
   return parsed.data;
 }
 /** Bound bytes before buffering, including chunked bodies. */
