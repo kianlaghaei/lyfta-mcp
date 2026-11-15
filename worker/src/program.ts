@@ -9,7 +9,7 @@ export async function validateIdentities(client: LyftaClient, workouts: WorkoutT
   const performed = await collectExercises(client, 3);
   const catalog = new Map(performed.records.map(ex => [String(ex.id), ex]));
   const exercises = new Map(workouts.flatMap(w => w.exercises).map(ex => [ex.exercise_id, ex]));
-  if (exercises.size > 20) throw new ValidationError("Use at most 20 distinct exercises per preview");
+  if (exercises.size > 30) throw new ValidationError("Use at most 30 distinct exercises per preview");
   for (const ex of exercises.values()) {
     let match: CatalogExercise | undefined = catalog.get(String(ex.exercise_id));
     if (!match || match.exercise_type == null) {
