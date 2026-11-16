@@ -50,7 +50,8 @@ export class LyftaClient {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), this.options.timeoutMs ?? 8000);
       try {
-        const response = await this.fetcher(url.toString(), {method, redirect: "error", signal: controller.signal,
+        // Cloudflare fetch requires globalThis as its receiver; calling it as this.fetcher() throws Illegal invocation.
+        const response = await this.fetcher.call(globalThis, url.toString(), {method, redirect: "manual", signal: controller.signal,
           headers: {Authorization: "Bearer " + this.key, Accept: "application/json",
             ...(body === undefined ? {} : {"Content-Type": "application/json"})},
           ...(body === undefined ? {} : {body: JSON.stringify(body)})});

@@ -67,7 +67,7 @@ describe("HTTP failure and resource boundaries", () => {
     await new LyftaClient("secret", fetcher).request("GET", "/api/v1/exercises/library", {search: "A & B/+", offset: 0});
     const [url, init] = fetcher.mock.calls[0]!;
     expect(new URL(String(url)).searchParams.get("search")).toBe("A & B/+");
-    expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer secret"); expect(init?.redirect).toBe("error");
+    expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer secret"); expect(init?.redirect).toBe("manual");
   });
   it("requires an ID in successful create response", async () => {
     await expect(new LyftaClient("key", async () => Response.json({status: true, data: {}})).createTemplate(42, workout))
